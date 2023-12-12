@@ -1,0 +1,13 @@
+listen: :8080
+login:
+  url: openid config
+  owner: owner subject
+modrinth:
+  endpoint: https://api.modrinth.com/v2
+  # endpoint: https://staging-api.modrinth.com/v2
+  # endpoint: http://localhost:5555/v2
+  token: # modrinth token
+curseforge:
+  endpoint: https://www.curseforge.com/api
+  # endpoint: http://localhost:6666/api
+  token: # curseforge token
