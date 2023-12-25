@@ -8,6 +8,6 @@ modrinth:
   # endpoint: http://localhost:5555/v2
   token: # modrinth token
 curseforge:
-  endpoint: https://www.curseforge.com/api
+  endpoint: https://minecraft.curseforge.com/api
   # endpoint: http://localhost:6666/api
   token: # curseforge token
