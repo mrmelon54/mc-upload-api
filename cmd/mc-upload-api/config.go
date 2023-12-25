@@ -1,6 +1,6 @@
 package main
 
-import "github.com/MrMelon54/mc-upload-api/uploader"
+import "github.com/mrmelon54/mc-upload-api/uploader"
 
 type Config struct {
 	Listen     string                    `yaml:"listen"`

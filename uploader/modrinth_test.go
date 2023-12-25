@@ -3,7 +3,7 @@ package uploader
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/MrMelon54/mc-upload-api/uploader/test"
+	"github.com/mrmelon54/mc-upload-api/uploader/test"
 	"github.com/stretchr/testify/assert"
 	"net/http"
 	"testing"
