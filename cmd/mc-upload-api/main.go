@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	exitReload "github.com/MrMelon54/exit-reload"
 	"github.com/julienschmidt/httprouter"
 	"github.com/mrmelon54/mc-upload-api/uploader"
@@ -76,10 +77,19 @@ func main() {
 			http.Error(rw, "403 Forbidden", http.StatusForbidden)
 			return
 		}
-		err := mrUpld.UploadVersion("XRsldNHQ", "1.0.0", "alpha", []string{"1.20", "1.20.1"}, []string{"fabric", "forge"}, true, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
-		if err != nil {
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
-			return
+		if project.Modrinth.Enabled() {
+			err := mrUpld.UploadVersion(project.Modrinth.Id, "1.0.0", "alpha", []string{"1.20", "1.20.1"}, []string{"fabric", "forge"}, true, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
+			if err != nil {
+				http.Error(rw, fmt.Errorf("modrinth: %w", err).Error(), http.StatusInternalServerError)
+				return
+			}
+		}
+		if project.Curseforge.Enabled() {
+			err := cfUpld.UploadVersion(project.Curseforge.Id, "1.0.0", "alpha", []string{"1.20", "1.20.1"}, []string{"fabric", "forge"}, true, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
+			if err != nil {
+				http.Error(rw, fmt.Errorf("curseforge: %w", err).Error(), http.StatusInternalServerError)
+				return
+			}
 		}
 		http.Error(rw, "OK", http.StatusOK)
 	})

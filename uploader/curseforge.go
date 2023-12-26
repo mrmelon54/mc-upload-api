@@ -9,6 +9,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 )
@@ -18,23 +19,27 @@ type curseforge struct {
 	client *http.Client
 
 	// version cache
-	r        *rescheduler.Rescheduler
-	cacheMu  *sync.RWMutex
-	expires  time.Time
-	verCache map[string]int
+	r         *rescheduler.Rescheduler
+	cacheMu   *sync.RWMutex
+	expires   time.Time
+	envCache  map[string]int
+	verCache  map[string]int
+	platCache map[string]int
 }
 
 var _ Uploader = &curseforge{}
 
 func NewCurseforgeUploader(config CurseforgeConfig, client *http.Client) Uploader {
 	c := &curseforge{
-		conf:     config,
-		client:   client,
-		cacheMu:  new(sync.RWMutex),
-		expires:  time.Now(),
-		verCache: make(map[string]int),
+		conf:      config,
+		client:    client,
+		cacheMu:   new(sync.RWMutex),
+		expires:   time.Time{},
+		envCache:  make(map[string]int),
+		verCache:  make(map[string]int),
+		platCache: make(map[string]int),
 	}
-	c.r = rescheduler.NewRescheduler(c.generateVersionCache)
+	c.r = rescheduler.NewRescheduler(c.generateCache)
 	return c
 }
 
@@ -44,14 +49,14 @@ type CurseforgeConfig struct {
 	UserAgent string `yaml:"userAgent"`
 }
 
-type CfDeps struct {
+type CfVersionTypes struct {
 	Id   int    `json:"id"`
 	Name string `json:"name"`
 	Slug string `json:"slug"`
 }
 
-func (c *curseforge) gameDeps() ([]CfDeps, error) {
-	req, err := http.NewRequest(http.MethodGet, c.conf.Endpoint+"/game/dependencies", nil)
+func (c *curseforge) gameVersionTypes() ([]CfVersionTypes, error) {
+	req, err := http.NewRequest(http.MethodGet, c.conf.Endpoint+"/game/version-types", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +67,7 @@ func (c *curseforge) gameDeps() ([]CfDeps, error) {
 	}
 	defer resp.Body.Close()
 
-	var deps []CfDeps
+	var deps []CfVersionTypes
 	err = json.NewDecoder(resp.Body).Decode(&deps)
 	if err != nil {
 		return nil, err
@@ -97,7 +102,7 @@ func (c *curseforge) gameVersions() ([]CfVersions, error) {
 	return vers, nil
 }
 
-func (c *curseforge) generateVersionCache() {
+func (c *curseforge) generateCache() {
 	c.cacheMu.Lock()
 	isValid := c.expires.Add(-2 * time.Hour).After(time.Now())
 	c.cacheMu.Unlock()
@@ -105,30 +110,51 @@ func (c *curseforge) generateVersionCache() {
 		return
 	}
 
-	deps, err := c.gameDeps()
+	verTypes, err := c.gameVersionTypes()
 	if err != nil {
-		log.Println("Failed to fetch game dependencies")
+		log.Println("[CF Cache] Failed to fetch game version types:", err)
 		return
 	}
 
-	var depsMap map[int]string
-	for _, i := range deps {
-		depsMap[i.Id] = i.Slug
+	var envId, platId int
+	verIds := make(map[int]bool)
+	for _, i := range verTypes {
+		switch i.Slug {
+		case "environment":
+			envId = i.Id
+		case "modloader":
+			platId = i.Id
+		default:
+			if strings.HasPrefix(i.Slug, "minecraft-") {
+				verIds[i.Id] = true
+			}
+		}
 	}
 
 	versions, err := c.gameVersions()
 	if err != nil {
-		log.Println("Failed to fetch game versions")
+		log.Println("[CF Cache] Failed to fetch game versions:", err)
 		return
 	}
 
 	c.cacheMu.Lock()
 	c.expires = time.Now().AddDate(0, 0, 1)
-	m := make(map[string]int)
+	mEnv := make(map[string]int)
+	mPlat := make(map[string]int)
+	mVer := make(map[string]int)
 	for _, i := range versions {
-		m[depsMap[i.GameVersionTypeID]+"@"+i.Name] = i.Id
+		switch {
+		case envId == i.GameVersionTypeID:
+			mEnv[i.Slug] = i.Id
+		case platId == i.GameVersionTypeID:
+			mPlat[i.Slug] = i.Id
+		case verIds[i.GameVersionTypeID]:
+			mVer[i.Name] = i.Id
+		}
 	}
-	c.verCache = m
+	c.envCache = mEnv
+	c.platCache = mPlat
+	c.verCache = mVer
 	c.cacheMu.Unlock()
 }
 

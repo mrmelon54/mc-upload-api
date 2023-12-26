@@ -18,3 +18,7 @@ type ProjectPlatform struct {
 	Url string `yaml:"url" json:"url"`
 	Id  string `yaml:"id" json:"id"`
 }
+
+func (p ProjectPlatform) Enabled() bool {
+	return p != ProjectPlatform{}
+}
