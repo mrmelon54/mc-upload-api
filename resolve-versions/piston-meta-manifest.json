@@ -1,0 +1,53 @@
+{
+    "latest": {
+        "release": "1.20.4",
+        "snapshot": "23w51b"
+    },
+    "versions": [
+        {
+            "id": "23w51b",
+            "type": "snapshot",
+            "url": "https://piston-meta.mojang.com/v1/packages/aaa534b9b3a1a39461b877e89f4f9eac8300f7f5/23w51b.json",
+            "time": "2023-12-18T15:46:45+00:00",
+            "releaseTime": "2023-12-18T15:39:14+00:00",
+            "sha1": "aaa534b9b3a1a39461b877e89f4f9eac8300f7f5",
+            "complianceLevel": 1
+        },
+        {
+            "id": "23w51a",
+            "type": "snapshot",
+            "url": "https://piston-meta.mojang.com/v1/packages/e7f5eda72c5ddee1828f629f00f5d97a3d1fd9f9/23w51a.json",
+            "time": "2023-12-18T13:45:53+00:00",
+            "releaseTime": "2023-12-18T13:36:46+00:00",
+            "sha1": "e7f5eda72c5ddee1828f629f00f5d97a3d1fd9f9",
+            "complianceLevel": 1
+        },
+        {
+            "id": "1.20.4",
+            "type": "release",
+            "url": "https://piston-meta.mojang.com/v1/packages/1a37ca7da53faeaeab6c8299251165e1b964899f/1.20.4.json",
+            "time": "2023-12-18T12:51:01+00:00",
+            "releaseTime": "2023-12-07T12:56:20+00:00",
+            "sha1": "1a37ca7da53faeaeab6c8299251165e1b964899f",
+            "complianceLevel": 1
+        },
+        {
+            "id": "1.20.4-rc1",
+            "type": "snapshot",
+            "url": "https://piston-meta.mojang.com/v1/packages/a4c988090c578a215b2d14438175c7ef4f3accd1/1.20.4-rc1.json",
+            "time": "2023-12-18T12:51:01+00:00",
+            "releaseTime": "2023-12-06T14:38:01+00:00",
+            "sha1": "a4c988090c578a215b2d14438175c7ef4f3accd1",
+            "complianceLevel": 1
+        },
+        {
+            "id": "1.20.3",
+            "type": "release",
+            "url": "https://piston-meta.mojang.com/v1/packages/c2a37de177861f974bd099b407908b90822cda0a/1.20.3.json",
+            "time": "2023-12-18T12:51:01+00:00",
+            "releaseTime": "2023-12-04T12:10:32+00:00",
+            "sha1": "c2a37de177861f974bd099b407908b90822cda0a",
+            "complianceLevel": 1
+        }
+    ]
+}

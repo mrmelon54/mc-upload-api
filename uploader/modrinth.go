@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	jar_parser "github.com/mrmelon54/mc-upload-api/jar-parser"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -44,18 +45,18 @@ type modrinthUploadDataError struct {
 	Description string `json:"description"`
 }
 
-func (m *modrinth) UploadVersion(projectId, versionNumber, releaseChannel string, gameVersions, loaders []string, featured bool, filename string, fileBody io.Reader) error {
+func (m *modrinth) UploadVersion(projectId string, meta jar_parser.ModMetadata, versions []string, featured bool, filename string, fileBody io.Reader) (string, error) {
 	bodyBuf := new(bytes.Buffer)
 	mpw := multipart.NewWriter(bodyBuf)
 
 	data := modrinthUploadDataStructure{
 		Name:           filename,
-		VersionNumber:  versionNumber,
+		VersionNumber:  meta.VersionNumber,
 		VersionBody:    nil,
 		Dependencies:   []string{},
-		GameVersions:   gameVersions,
-		ReleaseChannel: releaseChannel,
-		Loaders:        loaders,
+		GameVersions:   versions,
+		ReleaseChannel: meta.ReleaseChannel,
+		Loaders:        meta.Loaders,
 		Featured:       featured,
 		ProjectId:      projectId,
 		FileParts:      []string{"main_file"},
@@ -63,23 +64,23 @@ func (m *modrinth) UploadVersion(projectId, versionNumber, releaseChannel string
 
 	field, err := mpw.CreateFormField("data")
 	if err != nil {
-		return err
+		return "", err
 	}
 	encoder := json.NewEncoder(field)
 	if err = encoder.Encode(data); err != nil {
-		return err
+		return "", err
 	}
 
 	file, err := mpw.CreateFormFile("main_file", filename)
 	if err != nil {
-		return err
+		return "", err
 	}
 	_, _ = io.Copy(file, fileBody)
 	_ = mpw.Close()
 
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprintf("%s/version", m.conf.Endpoint), bodyBuf)
 	if err != nil {
-		return err
+		return "", err
 	}
 	req.Header.Set("User-Agent", m.conf.UserAgent)
 	req.Header.Set("Authorization", m.conf.Token)
@@ -87,7 +88,7 @@ func (m *modrinth) UploadVersion(projectId, versionNumber, releaseChannel string
 
 	do, err := m.client.Do(req)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer func(Body io.ReadCloser) {
 		_ = Body.Close()
@@ -97,9 +98,16 @@ func (m *modrinth) UploadVersion(projectId, versionNumber, releaseChannel string
 		decoder := json.NewDecoder(do.Body)
 		err := decoder.Decode(&errData)
 		if err != nil {
-			return err
+			return "", err
 		}
-		return fmt.Errorf("modrinth remote error: %s -- %s", errData.Error, errData.Description)
+		return "", fmt.Errorf("modrinth remote error: %s -- %s", errData.Error, errData.Description)
 	}
-	return nil
+	var idData struct {
+		Id string `json:"id"`
+	}
+	err = json.NewDecoder(do.Body).Decode(&idData)
+	if err != nil {
+		return "", err
+	}
+	return idData.Id, nil
 }

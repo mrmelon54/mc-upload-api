@@ -3,6 +3,7 @@ package uploader
 import (
 	"bytes"
 	"encoding/json"
+	jar_parser "github.com/mrmelon54/mc-upload-api/jar-parser"
 	"github.com/mrmelon54/mc-upload-api/uploader/test"
 	"github.com/stretchr/testify/assert"
 	"net/http"
@@ -12,11 +13,8 @@ import (
 func TestModrinth_UploadVersion(t *testing.T) {
 	r := http.NewServeMux()
 	r.HandleFunc("/version", func(rw http.ResponseWriter, req *http.Request) {
-		rw.WriteHeader(http.StatusOK)
 		mpr, err := req.MultipartReader()
-		if err != nil {
-			return
-		}
+		assert.NoError(t, err)
 
 		dataPart, err := mpr.NextPart()
 		assert.NoError(t, err)
@@ -41,6 +39,9 @@ func TestModrinth_UploadVersion(t *testing.T) {
 			assert.NoError(t, err)
 			assert.Equal(t, filePartName, filePart.FormName())
 		}
+
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(`{"id":"123aaa"}`))
 	})
 	srv := test.NewTestServer(r)
 
@@ -48,5 +49,12 @@ func TestModrinth_UploadVersion(t *testing.T) {
 		conf:   ModrinthConfig{Token: "abcd1234"},
 		client: srv,
 	}
-	assert.NoError(t, m.UploadVersion("123", "1.0.0-alpha", "alpha", []string{"1.20", "1.20.1"}, []string{"fabric", "forge"}, true, "name", bytes.NewReader([]byte{0x54, 0x54})))
+	mrId, err := m.UploadVersion("123", jar_parser.ModMetadata{
+		VersionNumber:  "1.0.0",
+		ReleaseChannel: "alpha",
+		GameVersions:   nil,
+		Loaders:        []string{"fabric", "forge"},
+	}, []string{"1.20", "1.20.1"}, true, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
+	assert.NoError(t, err)
+	println("mrId:", mrId)
 }

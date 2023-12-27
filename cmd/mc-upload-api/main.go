@@ -2,14 +2,22 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
+	"database/sql"
+	_ "embed"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	exitReload "github.com/MrMelon54/exit-reload"
 	"github.com/julienschmidt/httprouter"
+	_ "github.com/mattn/go-sqlite3"
+	jar_parser "github.com/mrmelon54/mc-upload-api/jar-parser"
+	resolve_versions "github.com/mrmelon54/mc-upload-api/resolve-versions"
 	"github.com/mrmelon54/mc-upload-api/uploader"
 	"gopkg.in/yaml.v3"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -18,6 +26,11 @@ import (
 	"sync/atomic"
 	"time"
 )
+
+//go:embed create-tables.sql
+var createTablesSql string
+
+const MaxFilesize = 5 << 20 // 5 MiB
 
 func main() {
 	var configYmlPath string
@@ -44,7 +57,7 @@ func main() {
 	stat, err := os.Stat(buildDir)
 	switch {
 	case os.IsNotExist(err):
-		err := os.Mkdir(buildDir, os.ModeDir)
+		err := os.Mkdir(buildDir, 0775)
 		if err != nil {
 			log.Fatalln("buildDir could not be created")
 		}
@@ -56,9 +69,18 @@ func main() {
 		}
 	}
 
+	db, err := sql.Open("sqlite3", filepath.Join(wd, "builds.sqlite3.db"))
+	if err != nil {
+		log.Fatalln("Failed to open database:", err)
+	}
+	_, err = db.Exec(createTablesSql)
+	if err != nil {
+		log.Fatalln("Failed to initialise database:", err)
+	}
+
 	mrUpld := uploader.NewModrinthUploader(configYml.Load().Modrinth, http.DefaultClient)
 	cfUpld := uploader.NewCurseforgeUploader(configYml.Load().Curseforge, http.DefaultClient)
-	_ = cfUpld
+	mcVersions := resolve_versions.NewMcVersionCache(http.DefaultClient)
 
 	r := httprouter.New()
 	r.POST("/upload/:slug", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
@@ -77,17 +99,113 @@ func main() {
 			http.Error(rw, "403 Forbidden", http.StatusForbidden)
 			return
 		}
+		mpFile, mpFileHeader, err := req.FormFile("upload")
+		if err != nil {
+			http.Error(rw, "Invalid file", http.StatusInternalServerError)
+			return
+		}
+		if mpFileHeader.Size > MaxFilesize {
+			http.Error(rw, "File too big", http.StatusRequestEntityTooLarge)
+			return
+		}
+
+		fileBuffer := new(bytes.Buffer)
+		_, err = io.CopyN(fileBuffer, mpFile, MaxFilesize)
+		if err != nil && !errors.Is(err, io.EOF) {
+			http.Error(rw, "Failed to transfer file", http.StatusInternalServerError)
+			return
+		}
+
+		// calculate file hash
+		h256 := sha256.New()
+		h256.Write(fileBuffer.Bytes())
+
+		modMeta, err := jar_parser.JarParser(bytes.NewReader(fileBuffer.Bytes()), int64(fileBuffer.Len()))
+		if err != nil {
+			log.Println("Failed to parse JAR:", err)
+			http.Error(rw, "Failed to parse JAR", http.StatusInternalServerError)
+			return
+		}
+
+		gameVersions, err := resolve_versions.ResolveGameVersions(modMeta.GameVersions, mcVersions)
+		if err != nil {
+			log.Println("Failed to resolve game versions:", err)
+			http.Error(rw, "Failed to resolve game versions", http.StatusInternalServerError)
+			return
+		}
+
+		type BuildMeta struct {
+			VersionNumber  string   `json:"version"`
+			ReleaseChannel string   `json:"channel"`
+			GameVersions   []string `json:"game_versions"`
+			Loaders        []string `json:"loaders"`
+			Environment    string   `json:"environment"`
+		}
+
+		buildMetaJson, err := json.Marshal(BuildMeta{
+			VersionNumber:  modMeta.VersionNumber,
+			ReleaseChannel: modMeta.ReleaseChannel,
+			GameVersions:   gameVersions,
+			Loaders:        modMeta.Loaders,
+			Environment:    modMeta.Environment,
+		})
+		if err != nil {
+			log.Println("Failed to generate build meta:", err)
+			http.Error(rw, "Failed to generate build meta", http.StatusInternalServerError)
+			return
+		}
+
+		exec, err := db.Exec(`INSERT INTO builds (project, meta, filename, sha256) VALUES (?, ?, ?, ?)`, slug, string(buildMetaJson), mpFileHeader.Filename, hex.EncodeToString(h256.Sum(nil)))
+		if err != nil {
+			log.Println("Database Error:", err)
+			http.Error(rw, "Database Error", http.StatusInternalServerError)
+			return
+		}
+		autoIncr, err := exec.LastInsertId()
+		if err != nil {
+			log.Println("Database Error:", err)
+			http.Error(rw, "Database Error", http.StatusInternalServerError)
+			return
+		}
+
+		datCreate, err := os.Create(filepath.Join(buildDir, fmt.Sprintf("%04x.dat", autoIncr)))
+		if err != nil {
+			log.Println("Failed file saving:", err)
+			http.Error(rw, "Failed file saving", http.StatusInternalServerError)
+			return
+		}
+		_, err = datCreate.Write(fileBuffer.Bytes())
+		if err != nil {
+			log.Println("Failed file saving:", err)
+			http.Error(rw, "Failed file saving", http.StatusInternalServerError)
+			return
+		}
+
 		if project.Modrinth.Enabled() {
-			err := mrUpld.UploadVersion(project.Modrinth.Id, "1.0.0", "alpha", []string{"1.20", "1.20.1"}, []string{"fabric", "forge"}, true, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
+			log.Printf("[Upload] Updating project %s (%s) on Modrinth\n", project.Name, project.Modrinth.Id)
+			mrId, err := mrUpld.UploadVersion(project.Modrinth.Id, modMeta, gameVersions, true, mpFileHeader.Filename, bytes.NewReader(fileBuffer.Bytes()))
 			if err != nil {
-				http.Error(rw, fmt.Errorf("modrinth: %w", err).Error(), http.StatusInternalServerError)
+				http.Error(rw, fmt.Errorf("upload modrinth: %w", err).Error(), http.StatusInternalServerError)
+				return
+			}
+			_, err = db.Exec(`UPDATE builds SET mrId = ? WHERE id = ?`, mrId, autoIncr)
+			if err != nil {
+				log.Println("Database Error:", err)
+				http.Error(rw, "Database Error", http.StatusInternalServerError)
 				return
 			}
 		}
 		if project.Curseforge.Enabled() {
-			err := cfUpld.UploadVersion(project.Curseforge.Id, "1.0.0", "alpha", []string{"1.20", "1.20.1"}, []string{"fabric", "forge"}, true, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
+			log.Printf("[Upload] Updating project %s (%s) on Curseforge\n", project.Name, project.Curseforge.Id)
+			cfId, err := cfUpld.UploadVersion(project.Curseforge.Id, modMeta, gameVersions, true, mpFileHeader.Filename, bytes.NewReader(fileBuffer.Bytes()))
 			if err != nil {
-				http.Error(rw, fmt.Errorf("curseforge: %w", err).Error(), http.StatusInternalServerError)
+				http.Error(rw, fmt.Errorf("upload curseforge: %w", err).Error(), http.StatusInternalServerError)
+				return
+			}
+			_, err = db.Exec(`UPDATE builds SET cfId = ? WHERE id = ?`, cfId, autoIncr)
+			if err != nil {
+				log.Println("Database Error:", err)
+				http.Error(rw, "Database Error", http.StatusInternalServerError)
 				return
 			}
 		}
@@ -101,6 +219,44 @@ func main() {
 			return
 		}
 		_ = json.NewEncoder(rw).Encode(project.ProjectDetails)
+	})
+	r.GET("/mod/:slug/versions", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+		slug := params.ByName("slug")
+		_, ok := (*projectsYml.Load())[slug]
+		if !ok {
+			http.Error(rw, "404 Not Found", http.StatusNotFound)
+			return
+		}
+		type VersionData struct {
+			Meta     json.RawMessage `json:"meta"`
+			Filename string          `json:"filename"`
+			Sha256   string          `json:"sha256"`
+			MrId     *string         `json:"modrinth_id,omitempty"`
+			CfId     *string         `json:"curseforge_id,omitempty"`
+		}
+		versionBlob := make([]VersionData, 0)
+		query, err := db.Query(`SELECT meta, filename, sha256, mrId, cfId FROM builds WHERE project = ? ORDER BY id`, slug)
+		if err != nil {
+			return
+		}
+		for query.Next() {
+			var version VersionData
+			var meta string
+			err := query.Scan(&meta, &version.Filename, &version.Sha256, &version.MrId, &version.CfId)
+			if err != nil {
+				log.Println("Database Error:", err)
+				http.Error(rw, "Database Error", http.StatusInternalServerError)
+				return
+			}
+			version.Meta = json.RawMessage(meta)
+			versionBlob = append(versionBlob, version)
+		}
+		if query.Err() != nil {
+			log.Println("Database Error:", err)
+			http.Error(rw, "Database Error", http.StatusInternalServerError)
+			return
+		}
+		_ = json.NewEncoder(rw).Encode(versionBlob)
 	})
 	srv := &http.Server{
 		Addr:              configYml.Load().Listen,
