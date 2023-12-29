@@ -183,7 +183,7 @@ func main() {
 
 		if project.Modrinth.Enabled() {
 			log.Printf("[Upload] Updating project %s (%s) on Modrinth\n", project.Name, project.Modrinth.Id)
-			mrId, err := mrUpld.UploadVersion(project.Modrinth.Id, modMeta, gameVersions, true, mpFileHeader.Filename, bytes.NewReader(fileBuffer.Bytes()))
+			mrId, err := mrUpld.UploadVersion(project.Modrinth.Id, modMeta, gameVersions, mpFileHeader.Filename, bytes.NewReader(fileBuffer.Bytes()))
 			if err != nil {
 				http.Error(rw, fmt.Errorf("upload modrinth: %w", err).Error(), http.StatusInternalServerError)
 				return
@@ -197,7 +197,7 @@ func main() {
 		}
 		if project.Curseforge.Enabled() {
 			log.Printf("[Upload] Updating project %s (%s) on Curseforge\n", project.Name, project.Curseforge.Id)
-			cfId, err := cfUpld.UploadVersion(project.Curseforge.Id, modMeta, gameVersions, true, mpFileHeader.Filename, bytes.NewReader(fileBuffer.Bytes()))
+			cfId, err := cfUpld.UploadVersion(project.Curseforge.Id, modMeta, gameVersions, mpFileHeader.Filename, bytes.NewReader(fileBuffer.Bytes()))
 			if err != nil {
 				http.Error(rw, fmt.Errorf("upload curseforge: %w", err).Error(), http.StatusInternalServerError)
 				return

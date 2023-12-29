@@ -6,5 +6,5 @@ import (
 )
 
 type Uploader interface {
-	UploadVersion(projectId string, meta jar_parser.ModMetadata, versions []string, featured bool, filename string, fileBody io.Reader) (string, error)
+	UploadVersion(projectId string, meta jar_parser.ModMetadata, versions []string, filename string, fileBody io.Reader) (string, error)
 }

@@ -205,7 +205,7 @@ type curseforgeUploadDataStructure struct {
 	ReleaseType  string `json:"releaseType"`
 }
 
-func (c *curseforge) UploadVersion(projectId string, meta jar_parser.ModMetadata, versions []string, _ bool, filename string, fileBody io.Reader) (string, error) {
+func (c *curseforge) UploadVersion(projectId string, meta jar_parser.ModMetadata, versions []string, filename string, fileBody io.Reader) (string, error) {
 	intVersions, err := c.lookupCfIds(meta.Loaders, versions, meta.Environment)
 	if err != nil {
 		return "", fmt.Errorf("invalid game version: %w", err)

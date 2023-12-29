@@ -7,7 +7,7 @@ import (
 
 type empty struct{}
 
-func (e *empty) UploadVersion(_ string, _ jarParser.ModMetadata, _ []string, _ bool, _ string, _ io.Reader) (string, error) {
+func (e *empty) UploadVersion(projectId string, meta jarParser.ModMetadata, versions []string, filename string, fileBody io.Reader) (string, error) {
 	return "", nil
 }
 

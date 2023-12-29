@@ -54,7 +54,7 @@ func TestModrinth_UploadVersion(t *testing.T) {
 		ReleaseChannel: "alpha",
 		GameVersions:   nil,
 		Loaders:        []string{"fabric", "forge"},
-	}, []string{"1.20", "1.20.1"}, true, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
+	}, []string{"1.20", "1.20.1"}, "my-test-file.jar", bytes.NewReader([]byte{0x54, 0x54}))
 	assert.NoError(t, err)
 	println("mrId:", mrId)
 }

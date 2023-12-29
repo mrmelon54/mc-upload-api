@@ -38,7 +38,6 @@ type modrinthUploadDataStructure struct {
 	GameVersions   []string `json:"game_versions"`
 	ReleaseChannel string   `json:"release_channel"`
 	Loaders        []string `json:"loaders"`
-	Featured       bool     `json:"featured"`
 	ProjectId      string   `json:"project_id"`
 	FileParts      []string `json:"file_parts"`
 }
@@ -48,7 +47,7 @@ type modrinthUploadDataError struct {
 	Description string `json:"description"`
 }
 
-func (m *modrinth) UploadVersion(projectId string, meta jar_parser.ModMetadata, versions []string, featured bool, filename string, fileBody io.Reader) (string, error) {
+func (m *modrinth) UploadVersion(projectId string, meta jar_parser.ModMetadata, versions []string, filename string, fileBody io.Reader) (string, error) {
 	bodyBuf := new(bytes.Buffer)
 	mpw := multipart.NewWriter(bodyBuf)
 
@@ -60,7 +59,6 @@ func (m *modrinth) UploadVersion(projectId string, meta jar_parser.ModMetadata, 
 		GameVersions:   versions,
 		ReleaseChannel: meta.ReleaseChannel,
 		Loaders:        meta.Loaders,
-		Featured:       featured,
 		ProjectId:      projectId,
 		FileParts:      []string{"main_file"},
 	}
