@@ -18,6 +18,9 @@ type modrinth struct {
 var _ Uploader = &modrinth{}
 
 func NewModrinthUploader(config ModrinthConfig, client *http.Client) Uploader {
+	if config == (ModrinthConfig{}) {
+		return &empty{}
+	}
 	return &modrinth{config, client}
 }
 

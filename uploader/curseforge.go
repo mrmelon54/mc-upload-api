@@ -32,6 +32,9 @@ type curseforge struct {
 var _ Uploader = &curseforge{}
 
 func NewCurseforgeUploader(config CurseforgeConfig, client *http.Client) Uploader {
+	if config == (CurseforgeConfig{}) {
+		return &empty{}
+	}
 	c := &curseforge{
 		conf:      config,
 		client:    client,
