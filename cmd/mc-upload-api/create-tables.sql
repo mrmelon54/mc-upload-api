@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS builds
     project  TEXT NOT NULL,
     meta     BLOB NOT NULL,
     filename TEXT NOT NULL,
-    sha256   TEXT NOT NULL,
+    sha512   TEXT NOT NULL,
     mrId     TEXT,
     cfId     TEXT
 );

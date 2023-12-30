@@ -2,7 +2,7 @@ package main
 
 import (
 	"bytes"
-	"crypto/sha256"
+	"crypto/sha512"
 	"database/sql"
 	_ "embed"
 	"encoding/hex"
@@ -117,8 +117,8 @@ func main() {
 		}
 
 		// calculate file hash
-		h256 := sha256.New()
-		h256.Write(fileBuffer.Bytes())
+		h512 := sha512.New()
+		h512.Write(fileBuffer.Bytes())
 
 		modMeta, err := jar_parser.JarParser(bytes.NewReader(fileBuffer.Bytes()), int64(fileBuffer.Len()))
 		if err != nil {
@@ -155,7 +155,7 @@ func main() {
 			return
 		}
 
-		exec, err := db.Exec(`INSERT INTO builds (project, meta, filename, sha256) VALUES (?, ?, ?, ?)`, slug, string(buildMetaJson), mpFileHeader.Filename, hex.EncodeToString(h256.Sum(nil)))
+		exec, err := db.Exec(`INSERT INTO builds (project, meta, filename, sha512) VALUES (?, ?, ?, ?)`, slug, string(buildMetaJson), mpFileHeader.Filename, hex.EncodeToString(h512.Sum(nil)))
 		if err != nil {
 			log.Println("Database Error:", err)
 			http.Error(rw, "Database Error", http.StatusInternalServerError)
@@ -230,19 +230,19 @@ func main() {
 		type VersionData struct {
 			Meta     json.RawMessage `json:"meta"`
 			Filename string          `json:"filename"`
-			Sha256   string          `json:"sha256"`
+			Sha512   string          `json:"sha512"`
 			MrId     *string         `json:"modrinth_id,omitempty"`
 			CfId     *string         `json:"curseforge_id,omitempty"`
 		}
 		versionBlob := make([]VersionData, 0)
-		query, err := db.Query(`SELECT meta, filename, sha256, mrId, cfId FROM builds WHERE project = ? ORDER BY id`, slug)
+		query, err := db.Query(`SELECT meta, filename, sha512, mrId, cfId FROM builds WHERE project = ? ORDER BY id`, slug)
 		if err != nil {
 			return
 		}
 		for query.Next() {
 			var version VersionData
 			var meta string
-			err := query.Scan(&meta, &version.Filename, &version.Sha256, &version.MrId, &version.CfId)
+			err := query.Scan(&meta, &version.Filename, &version.Sha512, &version.MrId, &version.CfId)
 			if err != nil {
 				log.Println("Database Error:", err)
 				http.Error(rw, "Database Error", http.StatusInternalServerError)

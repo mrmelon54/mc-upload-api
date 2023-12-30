@@ -8,6 +8,7 @@ import (
 	"log"
 	"net/http"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -105,6 +106,9 @@ func (v *McVersions) generateCache() {
 		log.Println("[MC Cache] Failed to fetch game versions:", err)
 		return
 	}
+	slices.SortFunc(versions, func(a, b *semver.Version) int {
+		return a.Compare(b)
+	})
 	v.versions = versions
 }
 
