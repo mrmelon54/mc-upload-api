@@ -119,6 +119,7 @@ func main() {
 		// calculate file hash
 		h512 := sha512.New()
 		h512.Write(fileBuffer.Bytes())
+		h512hex := hex.EncodeToString(h512.Sum(nil))
 
 		modMeta, err := jar_parser.JarParser(bytes.NewReader(fileBuffer.Bytes()), int64(fileBuffer.Len()))
 		if err != nil {
@@ -155,7 +156,7 @@ func main() {
 			return
 		}
 
-		exec, err := db.Exec(`INSERT INTO builds (project, meta, filename, sha512) VALUES (?, ?, ?, ?)`, slug, string(buildMetaJson), mpFileHeader.Filename, hex.EncodeToString(h512.Sum(nil)))
+		exec, err := db.Exec(`INSERT INTO builds (project, meta, filename, sha512) VALUES (?, ?, ?, ?)`, slug, string(buildMetaJson), mpFileHeader.Filename, h512hex)
 		if err != nil {
 			log.Println("Database Error:", err)
 			http.Error(rw, "Database Error", http.StatusInternalServerError)
@@ -168,7 +169,7 @@ func main() {
 			return
 		}
 
-		datCreate, err := os.Create(filepath.Join(buildDir, fmt.Sprintf("%04x.dat", autoIncr)))
+		datCreate, err := os.Create(filepath.Join(buildDir, h512hex+".jar"))
 		if err != nil {
 			log.Println("Failed file saving:", err)
 			http.Error(rw, "Failed file saving", http.StatusInternalServerError)
