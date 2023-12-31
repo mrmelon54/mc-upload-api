@@ -214,7 +214,11 @@ func main() {
 	})
 	r.GET("/summary", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		projects := *projectsYml.Load()
-		_ = json.NewEncoder(rw).Encode(projects)
+		a := make(map[string]ProjectDetails)
+		for k, v := range projects {
+			a[k] = v.ProjectDetails
+		}
+		_ = json.NewEncoder(rw).Encode(a)
 	})
 	r.GET("/mod/:slug", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		slug := params.ByName("slug")
