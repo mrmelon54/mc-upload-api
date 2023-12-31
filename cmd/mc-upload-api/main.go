@@ -212,6 +212,10 @@ func main() {
 		}
 		http.Error(rw, "OK", http.StatusOK)
 	})
+	r.GET("/summary", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
+		projects := *projectsYml.Load()
+		_ = json.NewEncoder(rw).Encode(projects)
+	})
 	r.GET("/mod/:slug", func(rw http.ResponseWriter, req *http.Request, params httprouter.Params) {
 		slug := params.ByName("slug")
 		project, ok := (*projectsYml.Load())[slug]
