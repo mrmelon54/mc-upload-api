@@ -20,5 +20,5 @@ type ProjectPlatform struct {
 }
 
 func (p ProjectPlatform) Enabled() bool {
-	return p != ProjectPlatform{}
+	return p.Id != ""
 }

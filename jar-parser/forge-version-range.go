@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var regexVersionRange = regexp.MustCompile(`^([(\[])([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?,([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?([)\]])`)
+var regexVersionRange = regexp.MustCompile(`^(?:([(\[])([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?,([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?([)\]])|([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?)`)
 
 type forgeVersionEnd struct {
 	V        *semver.Version
@@ -38,6 +38,9 @@ func ForgeVersionRange(s string) (constraints *semver.Constraints, err error) {
 		submatch := regexVersionRange.FindStringSubmatch(s)
 		if submatch == nil {
 			return nil, ErrInvalidForgeVersionRange
+		}
+		if submatch[1] == "" {
+			return semver.NewConstraint("=" + submatch[5])
 		}
 		start, err = parseForgeVersionEnd(submatch[2], submatch[1] == "[")
 		if err != nil {
