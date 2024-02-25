@@ -1,5 +1,5 @@
 name: sqlc
-on: [push]
+on: [ push ]
 jobs:
   diff:
     runs-on: ubuntu-latest
@@ -9,3 +9,15 @@ jobs:
         with:
           sqlc-version: '1.25.0'
       - run: sqlc diff
+  vet:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: vovavc/migrate-github-action@v0.2.1
+        with:
+          database: builds.sqlite3.db
+          command: up
+      - uses: sqlc-dev/setup-sqlc@v3
+        with:
+          sqlc-version: '1.25.0'
+      - run: sqlc vet
