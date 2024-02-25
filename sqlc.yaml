@@ -1,0 +1,14 @@
+version: "2"
+sql:
+  - engine: "sqlite"
+    queries: "database/queries"
+    schema: "database/migrations"
+    gen:
+      go:
+        package: "database"
+        out: "database"
+        overrides:
+          - column: "builds.meta"
+            go_type:
+              import: "encoding/json"
+              type: "RawMessage"

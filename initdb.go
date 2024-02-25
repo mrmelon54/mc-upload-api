@@ -1,0 +1,37 @@
+package mc_upload_api
+
+import (
+	"database/sql"
+	"embed"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/mrmelon54/mc-upload-api/database"
+)
+
+//go:embed database/migrations/*.sql
+var migrations embed.FS
+
+func InitDB(p string) (*database.Queries, error) {
+	migDrv, err := iofs.New(migrations, "database/migrations")
+	if err != nil {
+		return nil, err
+	}
+	dbOpen, err := sql.Open("sqlite3", p)
+	if err != nil {
+		return nil, err
+	}
+	dbDrv, err := sqlite3.WithInstance(dbOpen, &sqlite3.Config{})
+	if err != nil {
+		return nil, err
+	}
+	mig, err := migrate.NewWithInstance("iofs", migDrv, "sqlite3", dbDrv)
+	if err != nil {
+		return nil, err
+	}
+	err = mig.Up()
+	if err != nil {
+		return nil, err
+	}
+	return database.New(dbOpen), nil
+}

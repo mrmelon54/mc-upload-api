@@ -13,6 +13,8 @@ import (
 	exitReload "github.com/MrMelon54/exit-reload"
 	"github.com/julienschmidt/httprouter"
 	_ "github.com/mattn/go-sqlite3"
+	mc_upload_api "github.com/mrmelon54/mc-upload-api"
+	"github.com/mrmelon54/mc-upload-api/database"
 	jar_parser "github.com/mrmelon54/mc-upload-api/jar-parser"
 	resolve_versions "github.com/mrmelon54/mc-upload-api/resolve-versions"
 	"github.com/mrmelon54/mc-upload-api/uploader"
@@ -26,9 +28,6 @@ import (
 	"sync/atomic"
 	"time"
 )
-
-//go:embed create-tables.sql
-var createTablesSql string
 
 const MaxFilesize = 5 << 20 // 5 MiB
 
@@ -69,13 +68,9 @@ func main() {
 		}
 	}
 
-	db, err := sql.Open("sqlite3", filepath.Join(wd, "builds.sqlite3.db"))
+	db, err := mc_upload_api.InitDB(filepath.Join(wd, "builds.sqlite3.db"))
 	if err != nil {
-		log.Fatalln("Failed to open database:", err)
-	}
-	_, err = db.Exec(createTablesSql)
-	if err != nil {
-		log.Fatalln("Failed to initialise database:", err)
+		log.Fatalln("[DatabaseError] ", err)
 	}
 
 	mrUpld := uploader.NewModrinthUploader(configYml.Load().Modrinth, http.DefaultClient)
@@ -156,13 +151,12 @@ func main() {
 			return
 		}
 
-		exec, err := db.Exec(`INSERT INTO builds (project, meta, filename, sha512) VALUES (?, ?, ?, ?)`, slug, string(buildMetaJson), mpFileHeader.Filename, h512hex)
-		if err != nil {
-			log.Println("Database Error:", err)
-			http.Error(rw, "Database Error", http.StatusInternalServerError)
-			return
-		}
-		autoIncr, err := exec.LastInsertId()
+		lastId, err := db.CreateBuild(req.Context(), database.CreateBuildParams{
+			Project:  slug,
+			Meta:     buildMetaJson,
+			Filename: mpFileHeader.Filename,
+			Sha512:   h512hex,
+		})
 		if err != nil {
 			log.Println("Database Error:", err)
 			http.Error(rw, "Database Error", http.StatusInternalServerError)
@@ -189,7 +183,10 @@ func main() {
 				http.Error(rw, fmt.Errorf("upload modrinth: %w", err).Error(), http.StatusInternalServerError)
 				return
 			}
-			_, err = db.Exec(`UPDATE builds SET mrId = ? WHERE id = ?`, mrId, autoIncr)
+			err = db.UpdateModrinthFile(req.Context(), database.UpdateModrinthFileParams{
+				Mrid: sql.NullString{String: mrId, Valid: true},
+				ID:   lastId,
+			})
 			if err != nil {
 				log.Println("Database Error:", err)
 				http.Error(rw, "Database Error", http.StatusInternalServerError)
@@ -203,7 +200,10 @@ func main() {
 				http.Error(rw, fmt.Errorf("upload curseforge: %w", err).Error(), http.StatusInternalServerError)
 				return
 			}
-			_, err = db.Exec(`UPDATE builds SET cfId = ? WHERE id = ?`, cfId, autoIncr)
+			err = db.UpdateCurseforgeFile(req.Context(), database.UpdateCurseforgeFileParams{
+				Cfid: sql.NullString{String: cfId, Valid: true},
+				ID:   lastId,
+			})
 			if err != nil {
 				log.Println("Database Error:", err)
 				http.Error(rw, "Database Error", http.StatusInternalServerError)
@@ -236,36 +236,13 @@ func main() {
 			http.Error(rw, "404 Not Found", http.StatusNotFound)
 			return
 		}
-		type VersionData struct {
-			Meta     json.RawMessage `json:"meta"`
-			Filename string          `json:"filename"`
-			Sha512   string          `json:"sha512"`
-			MrId     *string         `json:"modrinth_id,omitempty"`
-			CfId     *string         `json:"curseforge_id,omitempty"`
-		}
-		versionBlob := make([]VersionData, 0)
-		query, err := db.Query(`SELECT meta, filename, sha512, mrId, cfId FROM builds WHERE project = ? ORDER BY id`, slug)
+		rows, err := db.ListBuilds(req.Context(), slug)
 		if err != nil {
-			return
-		}
-		for query.Next() {
-			var version VersionData
-			var meta string
-			err := query.Scan(&meta, &version.Filename, &version.Sha512, &version.MrId, &version.CfId)
-			if err != nil {
-				log.Println("Database Error:", err)
-				http.Error(rw, "Database Error", http.StatusInternalServerError)
-				return
-			}
-			version.Meta = json.RawMessage(meta)
-			versionBlob = append(versionBlob, version)
-		}
-		if query.Err() != nil {
 			log.Println("Database Error:", err)
 			http.Error(rw, "Database Error", http.StatusInternalServerError)
 			return
 		}
-		_ = json.NewEncoder(rw).Encode(versionBlob)
+		_ = json.NewEncoder(rw).Encode(rows)
 	})
 	srv := &http.Server{
 		Addr:              configYml.Load().Listen,
