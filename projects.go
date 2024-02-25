@@ -1,4 +1,4 @@
-package main
+package mc_upload_api
 
 type ProjectsConfig map[string]Project
 

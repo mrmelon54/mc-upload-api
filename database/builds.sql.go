@@ -8,7 +8,8 @@ package database
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
+
+	"github.com/mrmelon54/mc-upload-api/database/types"
 )
 
 const createBuild = `-- name: CreateBuild :execlastid
@@ -18,7 +19,7 @@ VALUES (?, ?, ?, ?)
 
 type CreateBuildParams struct {
 	Project  string
-	Meta     json.RawMessage
+	Meta     *types.BuildMeta
 	Filename string
 	Sha512   string
 }
@@ -37,18 +38,18 @@ func (q *Queries) CreateBuild(ctx context.Context, arg CreateBuildParams) (int64
 }
 
 const listBuilds = `-- name: ListBuilds :many
-SELECT meta, filename, sha512, mrId, cfId
+SELECT meta, filename, sha512, modrinth_id, curseforge_id
 FROM builds
 WHERE project = ?
 ORDER BY id
 `
 
 type ListBuildsRow struct {
-	Meta     json.RawMessage
-	Filename string
-	Sha512   string
-	Mrid     sql.NullString
-	Cfid     sql.NullString
+	Meta         *types.BuildMeta
+	Filename     string
+	Sha512       string
+	ModrinthID   sql.NullString
+	CurseforgeID sql.NullString
 }
 
 func (q *Queries) ListBuilds(ctx context.Context, project string) ([]ListBuildsRow, error) {
@@ -64,8 +65,8 @@ func (q *Queries) ListBuilds(ctx context.Context, project string) ([]ListBuildsR
 			&i.Meta,
 			&i.Filename,
 			&i.Sha512,
-			&i.Mrid,
-			&i.Cfid,
+			&i.ModrinthID,
+			&i.CurseforgeID,
 		); err != nil {
 			return nil, err
 		}
@@ -82,32 +83,32 @@ func (q *Queries) ListBuilds(ctx context.Context, project string) ([]ListBuildsR
 
 const updateCurseforgeFile = `-- name: UpdateCurseforgeFile :exec
 UPDATE builds
-SET cfId = ?
+SET curseforge_id = ?
 WHERE id = ?
 `
 
 type UpdateCurseforgeFileParams struct {
-	Cfid sql.NullString
-	ID   int64
+	CurseforgeID sql.NullString
+	ID           int64
 }
 
 func (q *Queries) UpdateCurseforgeFile(ctx context.Context, arg UpdateCurseforgeFileParams) error {
-	_, err := q.db.ExecContext(ctx, updateCurseforgeFile, arg.Cfid, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateCurseforgeFile, arg.CurseforgeID, arg.ID)
 	return err
 }
 
 const updateModrinthFile = `-- name: UpdateModrinthFile :exec
 UPDATE builds
-SET mrId = ?
+SET modrinth_id = ?
 WHERE id = ?
 `
 
 type UpdateModrinthFileParams struct {
-	Mrid sql.NullString
-	ID   int64
+	ModrinthID sql.NullString
+	ID         int64
 }
 
 func (q *Queries) UpdateModrinthFile(ctx context.Context, arg UpdateModrinthFileParams) error {
-	_, err := q.db.ExecContext(ctx, updateModrinthFile, arg.Mrid, arg.ID)
+	_, err := q.db.ExecContext(ctx, updateModrinthFile, arg.ModrinthID, arg.ID)
 	return err
 }

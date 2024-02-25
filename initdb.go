@@ -3,6 +3,7 @@ package mc_upload_api
 import (
 	"database/sql"
 	"embed"
+	"errors"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/sqlite3"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
@@ -30,7 +31,7 @@ func InitDB(p string) (*database.Queries, error) {
 		return nil, err
 	}
 	err = mig.Up()
-	if err != nil {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return nil, err
 	}
 	return database.New(dbOpen), nil

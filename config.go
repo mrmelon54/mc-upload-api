@@ -1,4 +1,4 @@
-package main
+package mc_upload_api
 
 import "github.com/mrmelon54/mc-upload-api/uploader"
 

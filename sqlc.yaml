@@ -9,6 +9,4 @@ sql:
         out: "database"
         overrides:
           - column: "builds.meta"
-            go_type:
-              import: "encoding/json"
-              type: "RawMessage"
+            go_type: "*github.com/mrmelon54/mc-upload-api/database/types.BuildMeta"
