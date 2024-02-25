@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - uses: mrmelon54/migrate-action@v1
+      - uses: mrmelon54/migrate-action@v1.0.0
         with:
           path: database/migrations
           database: sqlite3://builds.sqlite3.db
