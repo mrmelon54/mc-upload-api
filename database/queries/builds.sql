@@ -1,6 +1,6 @@
 -- name: CreateBuild :execlastid
-INSERT INTO builds (project, meta, filename, sha512)
-VALUES (?, ?, ?, ?);
+INSERT INTO builds (project, meta, filename, sha512, modrinth_id, curseforge_id)
+VALUES (?, ?, ?, ?, "", "");
 
 -- name: UpdateModrinthFile :exec
 UPDATE builds

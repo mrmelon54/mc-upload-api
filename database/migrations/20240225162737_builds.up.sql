@@ -5,6 +5,6 @@ CREATE TABLE builds
     meta          TEXT NOT NULL,
     filename      TEXT NOT NULL,
     sha512        TEXT NOT NULL,
-    modrinth_id   TEXT,
-    curseforge_id TEXT
+    modrinth_id   TEXT NOT NULL,
+    curseforge_id TEXT NOT NULL
 );

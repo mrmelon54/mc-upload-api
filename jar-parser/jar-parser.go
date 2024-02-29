@@ -39,11 +39,7 @@ func JarParser(r io.ReaderAt, size int64) (ModMetadata, error) {
 			meta.VersionNumber = fabricJson.Version
 			meta.Loaders = append(meta.Loaders, "fabric")
 			meta.Environment = fabricJson.Environment
-			constraint, err := semver.NewConstraint(fabricJson.Depends.Minecraft)
-			if err != nil {
-				return ModMetadata{}, err
-			}
-			meta.GameVersions = append(meta.GameVersions, constraint)
+			meta.GameVersions = append(meta.GameVersions, fabricJson.Depends.Minecraft.C)
 		case "quilt.mod.json":
 			var quiltJson QuiltJson
 			open, err := i.Open()
@@ -58,11 +54,7 @@ func JarParser(r io.ReaderAt, size int64) (ModMetadata, error) {
 			meta.Environment = quiltJson.Minecraft.Environment
 			for _, j := range quiltJson.QuiltLoader.Depends {
 				if j.Id == "minecraft" {
-					constraint, err := semver.NewConstraint(j.Version)
-					if err != nil {
-						return ModMetadata{}, err
-					}
-					meta.GameVersions = append(meta.GameVersions, constraint)
+					meta.GameVersions = append(meta.GameVersions, j.Version.C)
 				}
 			}
 		case "META-INF/mods.toml":

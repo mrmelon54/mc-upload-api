@@ -21,9 +21,9 @@ type FabricJson struct {
 	} `json:"entrypoints"`
 	Mixins  []string `json:"mixins"`
 	Depends struct {
-		Fabric       string `json:"fabric"`
-		Minecraft    string `json:"minecraft"`
-		Architectury string `json:"architectury"`
+		Fabric       *FabricVersionRange `json:"fabric"`
+		Minecraft    *FabricVersionRange `json:"minecraft"`
+		Architectury *FabricVersionRange `json:"architectury"`
 	} `json:"depends"`
 	AccessWidener string `json:"accessWidener"`
 }

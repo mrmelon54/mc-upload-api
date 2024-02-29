@@ -7,21 +7,20 @@ package database
 
 import (
 	"context"
-	"database/sql"
 
 	"github.com/mrmelon54/mc-upload-api/database/types"
 )
 
 const createBuild = `-- name: CreateBuild :execlastid
-INSERT INTO builds (project, meta, filename, sha512)
-VALUES (?, ?, ?, ?)
+INSERT INTO builds (project, meta, filename, sha512, modrinth_id, curseforge_id)
+VALUES (?, ?, ?, ?, "", "")
 `
 
 type CreateBuildParams struct {
-	Project  string
-	Meta     *types.BuildMeta
-	Filename string
-	Sha512   string
+	Project  string           `json:"project"`
+	Meta     *types.BuildMeta `json:"meta"`
+	Filename string           `json:"filename"`
+	Sha512   string           `json:"sha512"`
 }
 
 func (q *Queries) CreateBuild(ctx context.Context, arg CreateBuildParams) (int64, error) {
@@ -45,11 +44,11 @@ ORDER BY id
 `
 
 type ListBuildsRow struct {
-	Meta         *types.BuildMeta
-	Filename     string
-	Sha512       string
-	ModrinthID   sql.NullString
-	CurseforgeID sql.NullString
+	Meta         *types.BuildMeta `json:"meta"`
+	Filename     string           `json:"filename"`
+	Sha512       string           `json:"sha512"`
+	ModrinthID   string           `json:"modrinth_id"`
+	CurseforgeID string           `json:"curseforge_id"`
 }
 
 func (q *Queries) ListBuilds(ctx context.Context, project string) ([]ListBuildsRow, error) {
@@ -88,8 +87,8 @@ WHERE id = ?
 `
 
 type UpdateCurseforgeFileParams struct {
-	CurseforgeID sql.NullString
-	ID           int64
+	CurseforgeID string `json:"curseforge_id"`
+	ID           int64  `json:"id"`
 }
 
 func (q *Queries) UpdateCurseforgeFile(ctx context.Context, arg UpdateCurseforgeFileParams) error {
@@ -104,8 +103,8 @@ WHERE id = ?
 `
 
 type UpdateModrinthFileParams struct {
-	ModrinthID sql.NullString
-	ID         int64
+	ModrinthID string `json:"modrinth_id"`
+	ID         int64  `json:"id"`
 }
 
 func (q *Queries) UpdateModrinthFile(ctx context.Context, arg UpdateModrinthFileParams) error {

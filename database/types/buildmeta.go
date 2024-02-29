@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"fmt"
 )
 
 type BuildMeta struct {
@@ -23,6 +24,11 @@ func (b *BuildMeta) Value() (driver.Value, error) {
 }
 
 func (b *BuildMeta) Scan(src any) error {
-	srcRaw, _ := src.(string)
-	return json.Unmarshal([]byte(srcRaw), b)
+	switch srcRaw := src.(type) {
+	case string:
+		return json.Unmarshal([]byte(srcRaw), b)
+	case []byte:
+		return json.Unmarshal(srcRaw, b)
+	}
+	return fmt.Errorf("invalid type")
 }

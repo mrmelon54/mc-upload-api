@@ -27,8 +27,8 @@ type QuiltJson struct {
 			Modmenu []string `json:"modmenu"`
 		} `json:"entrypoints"`
 		Depends []struct {
-			Id      string `json:"id"`
-			Version string `json:"version"`
+			Id      string              `json:"id"`
+			Version *FabricVersionRange `json:"version"`
 		} `json:"depends"`
 	} `json:"quilt_loader"`
 	Minecraft struct {

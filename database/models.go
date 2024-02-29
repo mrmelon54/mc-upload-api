@@ -5,17 +5,15 @@
 package database
 
 import (
-	"database/sql"
-
 	"github.com/mrmelon54/mc-upload-api/database/types"
 )
 
 type Build struct {
-	ID           int64
-	Project      string
-	Meta         *types.BuildMeta
-	Filename     string
-	Sha512       string
-	ModrinthID   sql.NullString
-	CurseforgeID sql.NullString
+	ID           int64            `json:"id"`
+	Project      string           `json:"project"`
+	Meta         *types.BuildMeta `json:"meta"`
+	Filename     string           `json:"filename"`
+	Sha512       string           `json:"sha512"`
+	ModrinthID   string           `json:"modrinth_id"`
+	CurseforgeID string           `json:"curseforge_id"`
 }

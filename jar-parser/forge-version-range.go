@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-var regexVersionRange = regexp.MustCompile(`^(?:([(\[])([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?,([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?([)\]])|([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?)`)
+var regexVersionRange = regexp.MustCompile(`^(?:([(\[])([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?, ?([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?([)\]])|([0-9]+(?:\.[0-9]+(?:\.[0-9]+)?)?)?)`)
 
 type forgeVersionEnd struct {
 	V        *semver.Version
