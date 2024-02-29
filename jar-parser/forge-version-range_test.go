@@ -1,7 +1,6 @@
 package jar_parser
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 )
@@ -20,7 +19,6 @@ func TestForgeVersionRange(t *testing.T) {
 		t.Run(k, func(t *testing.T) {
 			a, err := ForgeVersionRange(k)
 			assert.NoError(t, err)
-			fmt.Println(v)
 			assert.Equal(t, v, a.String())
 		})
 	}
