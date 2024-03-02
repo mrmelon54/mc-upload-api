@@ -3,6 +3,7 @@ package jar_parser
 import (
 	"archive/zip"
 	"encoding/json"
+	"fmt"
 	"github.com/BurntSushi/toml"
 	"github.com/Masterminds/semver/v3"
 	"io"
@@ -78,7 +79,7 @@ func JarParser(r io.ReaderAt, size int64) (ModMetadata, error) {
 						if j.ModID == "minecraft" {
 							versionRange, err := ForgeVersionRange(j.VersionRange)
 							if err != nil {
-								return ModMetadata{}, err
+								return ModMetadata{}, fmt.Errorf("failed to parse forge version range '%s': %w\n", j.VersionRange, err)
 							}
 							meta.GameVersions = append(meta.GameVersions, versionRange)
 						}
