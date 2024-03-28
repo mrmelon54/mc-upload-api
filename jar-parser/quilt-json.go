@@ -8,12 +8,10 @@ type QuiltJson struct {
 		Id       string `json:"id"`
 		Version  string `json:"version"`
 		Metadata struct {
-			Name         string `json:"name"`
-			Description  string `json:"description"`
-			Contributors struct {
-				MrMelon54 string `json:"MrMelon54"`
-			} `json:"contributors"`
-			Contact struct {
+			Name         string            `json:"name"`
+			Description  string            `json:"description"`
+			Contributors map[string]string `json:"contributors"`
+			Contact      struct {
 				Homepage string `json:"homepage"`
 				Sources  string `json:"sources"`
 				Issues   string `json:"issues"`

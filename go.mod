@@ -11,6 +11,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.17.0
 	github.com/julienschmidt/httprouter v1.3.0
 	github.com/stretchr/testify v1.8.4
+	github.com/wreulicke/classfile-parser v0.0.0-20230219235921-f455f848dc74
 	gopkg.in/yaml.v3 v3.0.1
 )
 
