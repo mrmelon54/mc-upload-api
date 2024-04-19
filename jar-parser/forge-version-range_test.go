@@ -16,6 +16,7 @@ var forgeVersionRangeTestData = map[string]string{
 	"(,1.0],[1.2,)":   "<=1.0.0 || >=1.2.0",
 	"[1.16.4,1.16.5]": ">=1.16.4 <=1.16.5",
 	"[1.16.4]":        "=1.16.4",
+	"[1.20,1.20.1]":   ">=1.20.0 <=1.20.1",
 }
 
 func TestForgeVersionRange(t *testing.T) {
