@@ -72,6 +72,18 @@ func (r routeCtx) uploadPost(rw http.ResponseWriter, req *http.Request, params h
 		return
 	}
 
+	hashExists, err := r.db.HashExists(req.Context(), h512hex)
+	if err != nil {
+		log.Println("Failed to check if hash already exists:", err)
+		http.Error(rw, "Failed to check if hash already exists", http.StatusInternalServerError)
+		return
+	}
+
+	if hashExists == 1 {
+		http.Error(rw, "This hash is already uploaded", http.StatusOK)
+		return
+	}
+
 	lastId, err := r.db.CreateBuild(req.Context(), database.CreateBuildParams{
 		Project: slug,
 		Meta: &types.BuildMeta{

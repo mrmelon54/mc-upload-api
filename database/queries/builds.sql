@@ -17,3 +17,6 @@ SELECT meta, filename, sha512, modrinth_id, curseforge_id
 FROM builds
 WHERE project = ?
 ORDER BY id;
+
+-- name: HashExists :one
+SELECT EXISTS(SELECT 1 FROM builds WHERE sha512 = ?);
