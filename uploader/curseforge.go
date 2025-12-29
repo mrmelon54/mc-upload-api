@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/MrMelon54/rescheduler"
+	"github.com/mrmelon54/rescheduler"
 	jar_parser "github.com/mrmelon54/mc-upload-api/jar-parser"
 	"io"
 	"log"

@@ -3,7 +3,7 @@ package main
 import (
 	"errors"
 	"flag"
-	exitReload "github.com/MrMelon54/exit-reload"
+	exitReload "github.com/mrmelon54/exit-reload"
 	mcuploadapi "github.com/mrmelon54/mc-upload-api"
 	"github.com/mrmelon54/mc-upload-api/cmd/mc-upload-api/routes"
 	resolveversions "github.com/mrmelon54/mc-upload-api/resolve-versions"

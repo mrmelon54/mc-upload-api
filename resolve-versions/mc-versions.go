@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Masterminds/semver/v3"
-	"github.com/MrMelon54/rescheduler"
+	"github.com/mrmelon54/rescheduler"
 	"log"
 	"net/http"
 	"regexp"
